@@ -1,57 +1,52 @@
-# Japanese Learning Hub — Rebuild V2
+# Japanese Learning Hub — Cloud Sync build
 
-A fresh static HTML/CSS/JavaScript learning workspace for GitHub Pages. No backend or build step is required. Learning data is stored in the browser's LocalStorage.
+Static HTML/CSS/JavaScript app for GitHub Pages. Local learning data remains in LocalStorage and can additionally sync through the deployed Supabase Edge Function `jlh-sync`.
 
-## Deploy
-Upload `index.html`, `styles.css`, `app.js`, and this README to the repository root, then enable GitHub Pages from the main branch and `/ (root)`.
+## Update GitHub Pages
 
-## Implemented in this rebuild
-- Dashboard and sidebar navigation.
-- Vocabulary Inbox with 7-field bulk import, preview, duplicate checks, search, edit and delete.
-- Vocabulary Boxes: create flow immediately opens a Grid word picker, All Imported / Recent Imported filters, Select All / Deselect All, and multi-select membership editing.
-- Study inside each Vocabulary Box: Flashcard (tap to reveal; mark Known / Need Review) and Reading Recall (type Japanese with IME; Hiragana or the matching Kanji is accepted). Reading Recall supports 1–5 attempts, Enter submission, answer reveal, Enter/Next advance and retry incorrect. Kanji meaning study remains available in Kanji Boxes.
-- Kanji Library auto-extraction from saved vocabulary, searchable cards and detail modal.
-- Kanji Boxes with multi-select and Kanji meaning study.
-- Dictionary autocomplete over built-in starter records, user vocabulary and imported dictionary JSON packs; save to Inbox, Box and Kanji Library.
-- JSON backup and restore.
-- Handwriting canvas removed.
+Replace the existing repository-root files with these four files:
+- `index.html`
+- `styles.css`
+- `app.js`
+- `README.md`
 
-## Important dictionary-data limitation
-This ZIP **does not contain the full JMdict or KANJIDIC2 datasets**. The build environment used for this rebuild could not retrieve the upstream dataset files, so it would be misleading to describe the current offline dictionary as complete. The app includes a small starter vocabulary set and supports importing a prepared JSON dictionary pack through Settings. A full production offline dictionary requires bundling a properly converted JMdict + KANJIDIC2 data pack, with its licence and attribution files.
+Commit and push. No build step is required.
 
-Suggested dictionary pack shape:
+## First device (the laptop that already ran `create` in Supabase)
 
-```json
-{
-  "words": [
-    {
-      "jp": "私",
-      "kana": "わたし",
-      "romaji": "watashi",
-      "en": "I; me",
-      "vi": "tôi",
-      "pos": "pronoun",
-      "examples": ["私は学生です。"]
-    }
-  ]
-}
-```
+1. Open the app on the laptop and go to **Settings → Cloud Sync**.
+2. Enter the deployed Edge Function URL. The default is `https://vtxsyhkweibykeyjhjka.supabase.co/functions/v1/jlh-sync`.
+3. Enter the project's **Publishable key** (Supabase Dashboard → Project Settings → API Keys; use the publishable key, not a secret/service-role key).
+4. Paste `workspaceId` from the successful `create` response into **Workspace ID**.
+5. Paste `deviceToken` from that same `create` response into **Device Token**. Keep it private.
+6. Click **Lưu cấu hình**, then **Upload dữ liệu máy này**. This uploads the laptop's current LocalStorage data to the workspace created with an empty `{}` payload.
 
-## Dictionary sources and licence
-JMdict and KANJIDIC2 are maintained by the Electronic Dictionary Research and Development Group (EDRDG). Their dictionary files are made available under CC BY-SA 4.0 with EDRDG attribution and other licence conditions. See:
-- https://www.edrdg.org/dokuwiki/doku.php?id=start
-- https://www.edrdg.org/edrdg/licence.html
+Do not run `create` again for this workspace. It creates a separate workspace and a separate token.
 
-Any bundled derivative database must preserve required attribution and compatible ShareAlike terms. Vietnamese glosses in the app are separate curated data; do not treat automatically generated translations as authoritative.
+## Pair a phone / second device
 
-## Import vocabulary format
-One word per line, exactly seven fields separated by `|`:
+1. On the laptop, open Settings → Cloud Sync and click **Tạo mã ghép đôi**.
+2. On the phone, open the same GitHub Pages app. In Settings → Cloud Sync, enter the same Function URL and Publishable key.
+3. Enter the 12-character one-time pairing code and a device name, then click **Pair thiết bị này**.
+4. If the cloud already contains data, confirm replacing the phone's local workspace with the cloud copy.
 
-```text
-Japanese | Hiragana | Romaji | English meaning | Vietnamese meaning | Part of speech | Example sentence
-私 | わたし | watashi | I; me | tôi | pronoun | 私は学生です。
-```
+Pairing codes expire after 10 minutes and can only be used once. Generate a new one if it expires.
 
-## Notes
-- This is a functional rebuild, but it has not yet undergone full end-to-end browser QA in Chrome. Please test the listed flows before relying on it as your only copy of study data.
-- Export a backup regularly. Clearing browser data can erase the local workspace.
+## Sync behavior
+
+- Local changes are saved immediately to LocalStorage.
+- Once a device is connected, changes are pushed to Supabase after a short debounce.
+- Use **Pull dữ liệu Cloud** to explicitly replace this browser's local data with the cloud copy. The app asks for confirmation first.
+- Revision conflicts pause automatic pushing to avoid silently overwriting newer cloud data. Pull the latest data and resolve the situation before continuing.
+- Device credentials are stored in a separate browser LocalStorage key and are not included in the learning-data JSON backup.
+
+## Security notes
+
+- Never publish or share a device token, Supabase secret key, or service-role key.
+- The browser only needs the Supabase Publishable key plus its own device token.
+- The Edge Function must have JWT verification disabled if it is using the custom `x-jlh-device-token` authentication implemented in the function code.
+- The Edge Function's allowed CORS origin must exactly match the deployed GitHub Pages origin.
+
+## Existing dictionary limitation
+
+This build does not bundle the complete JMdict or KANJIDIC2 datasets. It retains the existing starter entries and dictionary JSON import feature.
